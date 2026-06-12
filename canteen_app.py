@@ -42,7 +42,6 @@ PRICE_MAP = {
     "không rõ":                   0,
 }
 
-
 DISPLAY_NAMES = {
     "cơm":                  "Cơm trắng",
     "đậu hũ sốt cà":       "Đậu hũ sốt cà",
@@ -94,7 +93,7 @@ def load_cnn():
     try:
         return tf.keras.models.load_model(CNN_MODEL_PATH)
     except Exception as e:
-        st.warning(f"Không tải được CNN ({e}) — chạy ở **chế độ demo**.")
+        st.warning(f"Không tải được CNN ({e}) — chạy ở chế độ demo.")
         return None
 
 @st.cache_resource(show_spinner="Đang tải YOLO nhận diện trứng…")
@@ -104,7 +103,7 @@ def load_yolo():
     try:
         return _YOLO(YOLO_MODEL_PATH)
     except Exception as e:
-        st.warning(f"Không tải được YOLO ({e}) — đếm trứng ở **chế độ demo**.")
+        st.warning(f"Không tải được YOLO ({e}) — đếm trứng ở chế độ demo.")
         return None
 
 def crop_compartment(img_np: np.ndarray, region: tuple) -> np.ndarray:
@@ -126,7 +125,6 @@ def predict_dish(model, crop_np: np.ndarray, class_names: list[str]) -> tuple[st
 
 def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
     annotated = img_np.copy()
-
     if yolo_model is None:
         count = np.random.randint(1, 4)
         h, w  = img_np.shape[:2]
@@ -134,11 +132,10 @@ def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
             x1 = np.random.randint(0, w//2);  y1 = np.random.randint(0, h//2)
             x2 = x1 + np.random.randint(60, 120)
             y2 = y1 + np.random.randint(60, 120)
-            cv2.rectangle(annotated, (x1,y1), (x2,y2), (255, 107, 53), 3)
+            cv2.rectangle(annotated, (x1,y1), (x2,y2), (200, 80, 10), 3)
             cv2.putText(annotated, f"egg {i+1}", (x1, y1-8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,107,53), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200,80,10), 2)
         return count, annotated
-
     results = yolo_model(img_np, conf=YOLO_CONF_THRESHOLD, verbose=False)[0]
     count   = 0
     for box in results.boxes:
@@ -147,12 +144,11 @@ def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
         conf  = float(box.conf[0])
         label = YOLO_CLASS_NAMES.get(cls_id, f"egg cls{cls_id}")
-        color = (255, 107, 53) if cls_id == 1 else (200, 80, 30)
+        color = (200, 80, 10) if cls_id == 1 else (160, 60, 0)
         cv2.rectangle(annotated, (x1,y1), (x2,y2), color, 3)
         cv2.putText(annotated, f"{label} {conf:.0%}", (x1, y1-8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
     return count, annotated
-
 
 def fmt_vnd(amount: int) -> str:
     return f"{amount:,}₫".replace(",", ".")
@@ -161,342 +157,261 @@ st.set_page_config(page_title="Canteen Auto-Billing", page_icon="🍱", layout="
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-/* ── Base reset ── */
 html, body, [class*="css"] {
-  font-family: 'Inter', sans-serif;
-  background-color: #0d1117;
-  color: #c9d1d9;
+  font-family: 'DM Sans', sans-serif;
+  background-color: #F7F5F2;
+  color: #1A1612;
 }
 
-/* ── Header ── */
-.header-wrap {
+.hdr {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.4rem 1.8rem;
-  background: linear-gradient(110deg, #161b22 0%, #1a2233 100%);
-  border: 1px solid #21262d;
-  border-radius: 12px;
-  margin-bottom: 1.6rem;
-  position: relative;
-  overflow: hidden;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.4rem;
+  padding: 1.8rem 0 1.2rem;
+  border-bottom: 2px solid #1A1612;
+  margin-bottom: 1.8rem;
 }
-.header-wrap::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 4px; height: 100%;
-  background: linear-gradient(180deg, #ff6b35, #00d4aa);
-  border-radius: 12px 0 0 12px;
-}
-.header-icon {
-  font-size: 2.6rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 12px rgba(255,107,53,0.5));
-}
-.header-title {
-  font-family: 'Nunito', sans-serif;
-  font-size: 1.7rem;
-  font-weight: 900;
-  color: #e8eaed;
+.hdr-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.9rem;
+  font-weight: 400;
+  color: #1A1612;
   margin: 0;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
+  line-height: 1;
 }
-.header-title span { color: #ff6b35; }
-.header-sub {
-  font-size: 0.78rem;
-  color: #6e7681;
-  margin: 2px 0 0;
+.hdr-sub {
+  font-size: 0.76rem;
+  color: #8A7F74;
   font-weight: 400;
 }
-.demo-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255,107,53,0.15);
-  color: #ff6b35;
-  border: 1px solid rgba(255,107,53,0.35);
-  font-size: 0.65rem;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  padding: 3px 9px;
-  border-radius: 20px;
-  letter-spacing: 0.8px;
+.demo-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #C8500A;
+  border: 1px solid #C8500A;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-left: 6px;
   vertical-align: middle;
+  margin-left: 0.6rem;
 }
 
-/* ── Section headings ── */
-.section-heading {
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #6e7681;
-  letter-spacing: 2px;
+.sec-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #8A7F74;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin: 1.4rem 0 0.7rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.section-heading::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #21262d;
+  margin: 1.6rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #E4E0DA;
 }
 
-/* ── Compartment card ── */
-.comp-card {
-  background: #161b22;
-  border: 1px solid #21262d;
-  border-radius: 10px;
-  padding: 0.75rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  height: 100%;
+.ccard {
+  background: #FFFFFF;
+  border: 1px solid #E4E0DA;
+  border-radius: 4px;
+  padding: 0.75rem 0.8rem 0.85rem;
 }
-.comp-card:hover {
-  border-color: rgba(255,107,53,0.4);
-  box-shadow: 0 0 16px rgba(255,107,53,0.08);
-}
-.comp-slot-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  color: #484f58;
-  letter-spacing: 1.5px;
+.ccard-slot {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.56rem;
+  color: #B5ADA4;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.55rem;
 }
-.comp-dish-name {
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #e8eaed;
-  margin: 0.45rem 0 0.35rem;
-  line-height: 1.3;
+.ccard-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 0.95rem;
+  color: #1A1612;
+  margin: 0.5rem 0 0.25rem;
+  line-height: 1.2;
 }
-.conf-track {
-  background: #21262d;
-  border-radius: 3px;
-  height: 4px;
-  margin: 0.2rem 0 0.3rem;
-  overflow: hidden;
+.conf-rail {
+  background: #F0EDE8;
+  border-radius: 1px;
+  height: 2px;
+  margin: 0.3rem 0 0.2rem;
 }
-.conf-thumb {
-  height: 4px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, #ff6b35, #ffa07a);
+.conf-bar-fill {
+  height: 2px;
+  border-radius: 1px;
+  background: #C8500A;
 }
-.conf-label {
-  font-size: 0.65rem;
-  color: #484f58;
-  margin-bottom: 0.35rem;
+.conf-pct {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  color: #B5ADA4;
 }
-.price-chip {
-  display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #00d4aa;
-  background: rgba(0,212,170,0.08);
-  border: 1px solid rgba(0,212,170,0.2);
-  padding: 2px 8px;
-  border-radius: 5px;
-  margin-top: 0.1rem;
+.ccard-price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1A6B4A;
+  margin-top: 0.45rem;
+  display: block;
 }
-.price-chip.zero {
-  color: #484f58;
-  background: transparent;
-  border-color: #21262d;
+.ccard-price.zero {
+  color: #B5ADA4;
+  font-weight: 400;
 }
 
-/* ── Egg detection panel ── */
-.egg-panel {
-  background: #161b22;
-  border: 1px solid rgba(255,107,53,0.3);
-  border-radius: 10px;
+.egg-box {
+  background: #FFF8F4;
+  border: 1px solid #E8C9B4;
+  border-radius: 4px;
   padding: 1rem 1.2rem;
-  margin-bottom: 1rem;
-  position: relative;
-  overflow: hidden;
+  margin-bottom: 1.2rem;
 }
-.egg-panel::after {
-  content: '🥚';
-  position: absolute;
-  right: 1rem; top: 50%;
-  transform: translateY(-50%);
-  font-size: 3rem;
-  opacity: 0.08;
-  pointer-events: none;
-}
-.egg-big {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 2.4rem;
-  font-weight: 700;
-  color: #ff6b35;
+.egg-num {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2.8rem;
+  color: #C8500A;
   line-height: 1;
 }
-.egg-sublabel {
-  font-size: 0.72rem;
-  color: #6e7681;
-  margin-top: 2px;
+.egg-unit {
+  font-size: 0.71rem;
+  color: #8A7F74;
+  margin-top: 0.15rem;
 }
 .egg-note {
-  font-size: 0.78rem;
-  color: #6e7681;
+  font-size: 0.75rem;
+  color: #8A7F74;
   margin-top: 0.6rem;
 }
-.egg-surcharge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  color: #ff6b35;
-  font-weight: 700;
+.egg-extra-cost {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #C8500A;
   margin-top: 0.3rem;
 }
 
-/* ── Bill panel ── */
-.bill-wrap {
-  background: #161b22;
-  border: 1px solid #21262d;
-  border-radius: 10px;
+.bill {
+  background: #FFFFFF;
+  border: 1px solid #E4E0DA;
+  border-radius: 4px;
   overflow: hidden;
 }
-.bill-header {
-  background: linear-gradient(90deg, #1a2233, #161b22);
-  padding: 0.7rem 1.1rem;
-  border-bottom: 1px solid #21262d;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.bill-top {
+  padding: 0.65rem 1.1rem 0.55rem;
+  border-bottom: 1px solid #E4E0DA;
 }
-.bill-header-text {
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #6e7681;
-  letter-spacing: 2px;
+.bill-top-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: #8A7F74;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.bill-body { padding: 0.2rem 0; }
-.bill-row {
+.b-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.42rem 1.1rem;
-  border-bottom: 1px solid #0d1117;
-  font-size: 0.83rem;
-}
-.bill-row:last-child { border-bottom: none; }
-.bill-row-name { color: #c9d1d9; }
-.bill-row-slot {
-  font-size: 0.68rem;
-  color: #484f58;
-  margin-left: 4px;
-}
-.bill-row-price {
-  font-family: 'JetBrains Mono', monospace;
+  align-items: baseline;
+  padding: 0.36rem 1.1rem;
   font-size: 0.82rem;
-  color: #8b949e;
-  font-weight: 500;
+  color: #3A332C;
+  border-bottom: 1px solid #F7F5F2;
 }
-.bill-egg-row {
+.b-slot {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.58rem;
+  color: #B5ADA4;
+  margin-left: 5px;
+}
+.b-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  color: #6B6259;
+}
+.b-egg-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.42rem 1.1rem;
-  background: rgba(255,107,53,0.05);
-  border-top: 1px dashed rgba(255,107,53,0.25);
-  border-bottom: 1px dashed rgba(255,107,53,0.25);
-  font-size: 0.83rem;
-  color: #ff6b35;
-}
-.bill-egg-price {
-  font-family: 'JetBrains Mono', monospace;
+  align-items: baseline;
+  padding: 0.36rem 1.1rem;
   font-size: 0.82rem;
-  color: #ff6b35;
-  font-weight: 700;
+  color: #C8500A;
+  border-top: 1px dashed #E8C9B4;
+  border-bottom: 1px dashed #E8C9B4;
+  background: #FFF8F4;
 }
-.bill-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #30363d, transparent);
-  margin: 0.1rem 1.1rem;
+.b-egg-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #C8500A;
 }
-.bill-total-row {
+.b-total-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0.8rem 1.1rem 0.9rem;
-  background: rgba(0,212,170,0.04);
-  border-top: 1px solid rgba(0,212,170,0.15);
+  align-items: baseline;
+  padding: 0.8rem 1.1rem;
+  border-top: 2px solid #1A1612;
 }
-.bill-total-label {
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #6e7681;
-  letter-spacing: 2px;
+.b-total-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: #1A1612;
 }
-.bill-total-amount {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #00d4aa;
+.b-total-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1A6B4A;
 }
 
-/* ── Upload zone / info banner ── */
-.info-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  background: #161b22;
-  border: 1px dashed #30363d;
-  border-radius: 10px;
-  padding: 1.2rem 1.4rem;
-  color: #6e7681;
-  font-size: 0.83rem;
+.empty-state {
+  background: #FFFFFF;
+  border: 1px dashed #C8C0B6;
+  border-radius: 4px;
+  padding: 2.4rem 1.5rem;
+  text-align: center;
+  color: #8A7F74;
+  font-size: 0.82rem;
 }
-.info-banner-icon { font-size: 1.5rem; opacity: 0.6; }
 
-/* ── Streamlit overrides ── */
 .stButton > button {
-  background: linear-gradient(135deg, #ff6b35, #e85d27) !important;
-  color: #fff !important;
+  background: #1A1612 !important;
+  color: #F7F5F2 !important;
   border: none !important;
-  border-radius: 8px !important;
-  font-family: 'Nunito', sans-serif !important;
-  font-weight: 800 !important;
-  font-size: 0.9rem !important;
-  padding: 0.55rem 1.4rem !important;
-  transition: opacity 0.2s, transform 0.1s !important;
-  box-shadow: 0 4px 14px rgba(255,107,53,0.3) !important;
+  border-radius: 3px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 0.84rem !important;
+  padding: 0.52rem 1.5rem !important;
+  letter-spacing: 0.01em !important;
+  transition: background 0.15s !important;
+  box-shadow: none !important;
 }
-.stButton > button:hover { opacity: 0.9 !important; transform: translateY(-1px) !important; }
-.stButton > button:disabled { opacity: 0.35 !important; transform: none !important; box-shadow: none !important; }
-
-.stRadio > div { gap: 0.4rem !important; }
-.stRadio label {
-  font-size: 0.83rem !important;
-  color: #8b949e !important;
+.stButton > button:hover:not(:disabled) {
+  background: #3A332C !important;
+}
+.stButton > button:disabled {
+  background: #C8C0B6 !important;
+  color: #F7F5F2 !important;
 }
 
+.stRadio label { font-size: 0.82rem !important; color: #3A332C !important; }
 [data-testid="stFileUploader"] {
-  border: 1px dashed #30363d !important;
-  border-radius: 10px !important;
-  background: #161b22 !important;
+  border: 1px dashed #C8C0B6 !important;
+  border-radius: 4px !important;
+  background: #FFFFFF !important;
 }
-
-div[data-testid="stImage"] img { border-radius: 8px; }
-
-.stAlert {
-  border-radius: 8px !important;
-  font-size: 0.83rem !important;
-}
-
-hr { border-color: #21262d !important; }
+div[data-testid="stImage"] img { border-radius: 3px; }
+.stAlert { border-radius: 3px !important; font-size: 0.81rem !important; }
+hr { border: none !important; border-top: 1px solid #E4E0DA !important; }
+[data-testid="column"] { padding: 0 0.35rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -505,15 +420,12 @@ cnn_model   = load_cnn()
 yolo_model  = load_yolo()
 
 demo = (cnn_model is None) or (yolo_model is None)
-demo_chip = '<span class="demo-chip">⚡ Demo</span>' if demo else ""
+demo_tag = '<span class="demo-tag">Demo</span>' if demo else ""
 
 st.markdown(f"""
-<div class="header-wrap">
-  <div class="header-icon">🍱</div>
-  <div>
-    <div class="header-title">Canteen <span>Auto-Billing</span>{demo_chip}</div>
-    <div class="header-sub">Chụp khay → CNN nhận diện 5 ô → YOLO đếm trứng → In hóa đơn tức thì</div>
-  </div>
+<div class="hdr">
+  <span class="hdr-title">Canteen Auto-Billing{demo_tag}</span>
+  <span class="hdr-sub">Ảnh khay &rarr; CNN nhận diện 5 ô &rarr; YOLO đếm trứng &rarr; Hóa đơn tức thì</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -532,7 +444,7 @@ with col_in:
         if cam:
             tray_image = Image.open(cam).convert("RGB")
 
-    go = st.button("🔍 Nhận diện món & tính tiền", disabled=(tray_image is None))
+    go = st.button("Nhận diện món & tính tiền", disabled=(tray_image is None))
 
 if tray_image and not go:
     st.image(tray_image, caption="Ảnh khay — sẵn sàng phân tích", width=500)
@@ -549,7 +461,7 @@ if go and tray_image:
             price = PRICE_MAP.get(dish_key, 0)
             display = DISPLAY_NAMES.get(dish_key, dish)
             cnn_results[slot] = dict(crop=crop, dish=dish, display=display, conf=conf, price=price)
-        
+
     has_thit_kho_trung = any(
         normalize_text(r["dish"]) == "thịt kho trứng" for r in cnn_results.values()
     )
@@ -567,21 +479,21 @@ if go and tray_image:
     left_col, right_col = st.columns([3, 2])
 
     with left_col:
-        st.markdown('<div class="section-heading">Các ô trong khay</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-label">Các ô trong khay</div>', unsafe_allow_html=True)
 
         def render_card(col, slot, r):
             with col:
                 pct = int(r["conf"] * 100)
                 price_str = fmt_vnd(r["price"]) if r["price"] else "—"
-                price_cls = "price-chip" if r["price"] else "price-chip zero"
-                st.markdown(f'<div class="comp-card">', unsafe_allow_html=True)
+                price_cls = "ccard-price" if r["price"] else "ccard-price zero"
+                st.markdown('<div class="ccard">', unsafe_allow_html=True)
                 st.image(Image.fromarray(r["crop"]), use_container_width=True)
                 st.markdown(f"""
-                  <div class="comp-slot-label">{slot}</div>
-                  <div class="comp-dish-name">{r["display"]}</div>
-                  <div class="conf-track"><div class="conf-thumb" style="width:{pct}%"></div></div>
-                  <div class="conf-label">{pct}% độ chính xác</div>
-                  <div class="{price_cls}">{price_str}</div>
+                  <div class="ccard-slot">{slot}</div>
+                  <div class="ccard-name">{r["display"]}</div>
+                  <div class="conf-rail"><div class="conf-bar-fill" style="width:{pct}%"></div></div>
+                  <div class="conf-pct">{pct}%</div>
+                  <span class="{price_cls}">{price_str}</span>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -592,27 +504,27 @@ if go and tray_image:
         r2 = st.columns(3)
         for col, slot in zip(r2, ["Bottom-Left", "Bottom-Center", "Bottom-Right"]):
             render_card(col, slot, cnn_results[slot])
-     
+
         if has_thit_kho_trung:
-            st.markdown('<div class="section-heading">Nhận diện trứng</div>', unsafe_allow_html=True)
+            st.markdown('<div class="sec-label">Kết quả nhận diện trứng</div>', unsafe_allow_html=True)
             st.image(annotated_np, caption=f"YOLO phát hiện {egg_count} quả trứng", use_container_width=True)
 
     with right_col:
         if has_thit_kho_trung:
             if extra_eggs > 0:
-                surcharge_note = f"+{extra_eggs} trứng thêm × {fmt_vnd(egg_price)}"
-                surcharge_html = f'<div class="egg-surcharge">+{fmt_vnd(egg_charge)} phụ thu</div>'
+                surcharge_note = f"+{extra_eggs} quả thêm × {fmt_vnd(egg_price)}"
+                extra_html = f'<div class="egg-extra-cost">+{fmt_vnd(egg_charge)} phụ thu</div>'
             else:
                 surcharge_note = "1 trứng đã gồm trong Thịt kho trứng"
-                surcharge_html = ""
+                extra_html = ""
 
             st.markdown(f"""
-            <div class="section-heading">Trứng</div>
-            <div class="egg-panel">
-              <div class="egg-big">{egg_count}</div>
-              <div class="egg-sublabel">quả trứng được phát hiện</div>
+            <div class="sec-label">Trứng</div>
+            <div class="egg-box">
+              <div class="egg-num">{egg_count}</div>
+              <div class="egg-unit">quả trứng được phát hiện</div>
               <div class="egg-note">{surcharge_note}</div>
-              {surcharge_html}
+              {extra_html}
             </div>
             """, unsafe_allow_html=True)
 
@@ -622,44 +534,41 @@ if go and tray_image:
         for slot, r in cnn_results.items():
             price_str = fmt_vnd(r["price"]) if r["price"] > 0 else "&#8212;"
             rows_html += f"""
-            <div class="bill-row">
-              <span class="bill-row-name">{r["display"]} <span class="bill-row-slot">{slot}</span></span>
-              <span class="bill-row-price">{price_str}</span>
+            <div class="b-row">
+              <span>{r["display"]}<span class="b-slot">{slot}</span></span>
+              <span class="b-amount">{price_str}</span>
             </div>"""
 
         egg_row_html = ""
         if egg_charge > 0:
             egg_row_html = f"""
-            <div class="bill-egg-row">
-              <span>🥚 Trứng thêm ×{extra_eggs}</span>
-              <span class="bill-egg-price">+{fmt_vnd(egg_charge)}</span>
+            <div class="b-egg-row">
+              <span>Trứng thêm &times;{extra_eggs}</span>
+              <span class="b-egg-amount">+{fmt_vnd(egg_charge)}</span>
             </div>"""
 
         st.markdown(f"""
-        <div class="section-heading">Hóa đơn</div>
-        <div class="bill-wrap">
-          <div class="bill-header">
-            <span>🧾</span>
-            <span class="bill-header-text">Chi tiết thanh toán</span>
+        <div class="sec-label">Hóa đơn</div>
+        <div class="bill">
+          <div class="bill-top">
+            <div class="bill-top-label">Chi tiết thanh toán</div>
           </div>
-          <div class="bill-body">
+          <div>
             {rows_html}
             {egg_row_html}
-            <div class="bill-divider"></div>
           </div>
-          <div class="bill-total-row">
-            <span class="bill-total-label">Tổng cộng</span>
-            <span class="bill-total-amount">{fmt_vnd(total)}</span>
+          <div class="b-total-row">
+            <span class="b-total-label">Tổng cộng</span>
+            <span class="b-total-amount">{fmt_vnd(total)}</span>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.success(f"✅ Tổng tiền: **{fmt_vnd(total)}**")
+        st.success(f"Tổng tiền: **{fmt_vnd(total)}**")
 
 elif not tray_image:
     st.markdown("""
-    <div class="info-banner">
-      <span class="info-banner-icon">⬆️</span>
-      <span>Tải ảnh khay cơm lên hoặc dùng webcam để bắt đầu nhận diện.</span>
+    <div class="empty-state">
+      Tải ảnh khay cơm lên hoặc dùng webcam để bắt đầu.
     </div>
     """, unsafe_allow_html=True)
