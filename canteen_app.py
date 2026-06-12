@@ -42,6 +42,7 @@ PRICE_MAP = {
     "không rõ":                   0,
 }
 
+
 DISPLAY_NAMES = {
     "cơm":                  "Cơm trắng",
     "đậu hũ sốt cà":       "Đậu hũ sốt cà",
@@ -86,24 +87,24 @@ def load_class_names(path: str) -> list[str]:
             return names
     return list(PRICE_MAP.keys())
 
-@st.cache_resource(show_spinner="Đang tải mô hình CNN…")
+@st.cache_resource(show_spinner="Loading CNN model…")
 def load_cnn():
     if not TF_AVAILABLE:
         return None
     try:
         return tf.keras.models.load_model(CNN_MODEL_PATH)
     except Exception as e:
-        st.warning(f"Không tải được CNN ({e}) — chạy ở chế độ demo.")
+        st.warning(f"CNN model not loaded ({e}) — running in **demo mode**.")
         return None
 
-@st.cache_resource(show_spinner="Đang tải YOLO nhận diện trứng…")
+@st.cache_resource(show_spinner="Loading YOLO egg detector…")
 def load_yolo():
     if not YOLO_AVAILABLE:
         return None
     try:
         return _YOLO(YOLO_MODEL_PATH)
     except Exception as e:
-        st.warning(f"Không tải được YOLO ({e}) — đếm trứng ở chế độ demo.")
+        st.warning(f"YOLO model not loaded ({e}) — egg counting in **demo mode**.")
         return None
 
 def crop_compartment(img_np: np.ndarray, region: tuple) -> np.ndarray:
@@ -125,6 +126,7 @@ def predict_dish(model, crop_np: np.ndarray, class_names: list[str]) -> tuple[st
 
 def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
     annotated = img_np.copy()
+
     if yolo_model is None:
         count = np.random.randint(1, 4)
         h, w  = img_np.shape[:2]
@@ -132,10 +134,11 @@ def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
             x1 = np.random.randint(0, w//2);  y1 = np.random.randint(0, h//2)
             x2 = x1 + np.random.randint(60, 120)
             y2 = y1 + np.random.randint(60, 120)
-            cv2.rectangle(annotated, (x1,y1), (x2,y2), (200, 80, 10), 3)
+            cv2.rectangle(annotated, (x1,y1), (x2,y2), (255, 200, 0), 3)
             cv2.putText(annotated, f"egg {i+1}", (x1, y1-8),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200,80,10), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,200,0), 2)
         return count, annotated
+
     results = yolo_model(img_np, conf=YOLO_CONF_THRESHOLD, verbose=False)[0]
     count   = 0
     for box in results.boxes:
@@ -144,11 +147,12 @@ def count_eggs_yolo(yolo_model, img_np: np.ndarray) -> tuple[int, np.ndarray]:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
         conf  = float(box.conf[0])
         label = YOLO_CLASS_NAMES.get(cls_id, f"egg cls{cls_id}")
-        color = (200, 80, 10) if cls_id == 1 else (160, 60, 0)
+        color = (255, 200, 0) if cls_id == 1 else (200, 150, 0)
         cv2.rectangle(annotated, (x1,y1), (x2,y2), color, 3)
         cv2.putText(annotated, f"{label} {conf:.0%}", (x1, y1-8),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
     return count, annotated
+
 
 def fmt_vnd(amount: int) -> str:
     return f"{amount:,}₫".replace(",", ".")
@@ -157,261 +161,183 @@ st.set_page_config(page_title="Canteen Auto-Billing", page_icon="🍱", layout="
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
+/* ── Base ── */
 html, body, [class*="css"] {
-  font-family: 'DM Sans', sans-serif;
-  background-color: #F7F5F2;
-  color: #1A1612;
+  font-family: 'Be Vietnam Pro', sans-serif;
+  background-color: #F5F3EF;
+  color: #1C1917;
 }
 
-.hdr {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.8rem 1.4rem;
-  padding: 1.8rem 0 1.2rem;
-  border-bottom: 2px solid #1A1612;
-  margin-bottom: 1.8rem;
+/* ── Title bar ── */
+.title-bar {
+  background: #FFFFFF;
+  border: 1px solid #E5E1D8;
+  border-top: 3px solid #B45309;
+  padding: 1rem 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 1.4rem;
 }
-.hdr-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.9rem;
-  font-weight: 400;
-  color: #1A1612;
+.title-bar h1 {
   margin: 0;
-  letter-spacing: -0.4px;
-  line-height: 1;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1C1917;
+  letter-spacing: -0.3px;
 }
-.hdr-sub {
-  font-size: 0.76rem;
-  color: #8A7F74;
+.title-bar p {
+  margin: .25rem 0 0;
+  font-size: .8rem;
+  color: #78716C;
   font-weight: 400;
 }
-.demo-tag {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: #C8500A;
-  border: 1px solid #C8500A;
-  padding: 2px 6px;
-  border-radius: 2px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  vertical-align: middle;
-  margin-left: 0.6rem;
-}
 
-.sec-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.6rem;
+/* ── Compartment card labels ── */
+.crop-label {
+  font-size: .65rem;
+  color: #A8A29E;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: .25rem;
   font-weight: 500;
-  color: #8A7F74;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  margin: 1.6rem 0 0.75rem;
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid #E4E0DA;
+}
+.dish-name {
+  font-size: .92rem;
+  font-weight: 700;
+  color: #1C1917;
+  margin: .3rem 0 .1rem;
+}
+.conf-bar {
+  background: #E5E1D8;
+  border-radius: 3px;
+  height: 4px;
+  margin: .25rem 0;
+}
+.conf-fill {
+  background: #B45309;
+  height: 4px;
+  border-radius: 3px;
+}
+.price-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: .85rem;
+  color: #15803D;
+  font-weight: 700;
 }
 
-.ccard {
-  background: #FFFFFF;
-  border: 1px solid #E4E0DA;
-  border-radius: 4px;
-  padding: 0.75rem 0.8rem 0.85rem;
+/* ── Egg panel ── */
+.egg-panel {
+  background: #FFFBF5;
+  border: 1px solid #FDE68A;
+  border-left: 3px solid #D97706;
+  border-radius: 6px;
+  padding: 1rem 1.4rem;
+  margin-bottom: 1rem;
 }
-.ccard-slot {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.56rem;
-  color: #B5ADA4;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 0.55rem;
-}
-.ccard-name {
-  font-family: 'DM Serif Display', serif;
-  font-size: 0.95rem;
-  color: #1A1612;
-  margin: 0.5rem 0 0.25rem;
-  line-height: 1.2;
-}
-.conf-rail {
-  background: #F0EDE8;
-  border-radius: 1px;
-  height: 2px;
-  margin: 0.3rem 0 0.2rem;
-}
-.conf-bar-fill {
-  height: 2px;
-  border-radius: 1px;
-  background: #C8500A;
-}
-.conf-pct {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.58rem;
-  color: #B5ADA4;
-}
-.ccard-price {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1A6B4A;
-  margin-top: 0.45rem;
-  display: block;
-}
-.ccard-price.zero {
-  color: #B5ADA4;
-  font-weight: 400;
-}
-
-.egg-box {
-  background: #FFF8F4;
-  border: 1px solid #E8C9B4;
-  border-radius: 4px;
-  padding: 1rem 1.2rem;
-  margin-bottom: 1.2rem;
-}
-.egg-num {
-  font-family: 'DM Serif Display', serif;
-  font-size: 2.8rem;
-  color: #C8500A;
+.egg-count {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #B45309;
+  font-family: 'Space Mono', monospace;
   line-height: 1;
 }
-.egg-unit {
-  font-size: 0.71rem;
-  color: #8A7F74;
-  margin-top: 0.15rem;
-}
-.egg-note {
-  font-size: 0.75rem;
-  color: #8A7F74;
-  margin-top: 0.6rem;
-}
-.egg-extra-cost {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #C8500A;
-  margin-top: 0.3rem;
+.egg-label {
+  font-size: .75rem;
+  color: #92400E;
+  margin-top: .1rem;
+  font-weight: 500;
 }
 
-.bill {
+/* ── Bill panel ── */
+.bill-panel {
   background: #FFFFFF;
-  border: 1px solid #E4E0DA;
-  border-radius: 4px;
-  overflow: hidden;
+  border: 1px solid #E5E1D8;
+  border-radius: 6px;
+  padding: 1.1rem 1.4rem;
 }
-.bill-top {
-  padding: 0.65rem 1.1rem 0.55rem;
-  border-bottom: 1px solid #E4E0DA;
-}
-.bill-top-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.6rem;
-  color: #8A7F74;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.b-row {
+.bill-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 0.36rem 1.1rem;
-  font-size: 0.82rem;
-  color: #3A332C;
-  border-bottom: 1px solid #F7F5F2;
+  padding: .32rem 0;
+  border-bottom: 1px solid #F0EDE7;
+  font-size: .85rem;
+  color: #44403C;
 }
-.b-slot {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.58rem;
-  color: #B5ADA4;
-  margin-left: 5px;
-}
-.b-amount {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.78rem;
-  color: #6B6259;
-}
-.b-egg-row {
+.bill-egg {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 0.36rem 1.1rem;
-  font-size: 0.82rem;
-  color: #C8500A;
-  border-top: 1px dashed #E8C9B4;
-  border-bottom: 1px dashed #E8C9B4;
-  background: #FFF8F4;
-}
-.b-egg-amount {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.78rem;
+  padding: .32rem 0;
+  border-bottom: 1px dashed #FCD34D;
+  font-size: .85rem;
+  color: #B45309;
   font-weight: 600;
-  color: #C8500A;
 }
-.b-total-row {
+.bill-total {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 0.8rem 1.1rem;
-  border-top: 2px solid #1A1612;
+  padding: .6rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1C1917;
+  border-top: 2px solid #1C1917;
+  margin-top: .4rem;
 }
-.b-total-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #1A1612;
+.mono {
+  font-family: 'Space Mono', monospace;
+  font-size: .82rem;
 }
-.b-total-amount {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1A6B4A;
+.mono-total {
+  font-family: 'Space Mono', monospace;
+  font-size: 1rem;
+  color: #15803D;
 }
 
-.empty-state {
-  background: #FFFFFF;
-  border: 1px dashed #C8C0B6;
-  border-radius: 4px;
-  padding: 2.4rem 1.5rem;
-  text-align: center;
-  color: #8A7F74;
-  font-size: 0.82rem;
+/* ── Badge ── */
+.badge {
+  display: inline-block;
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+  font-size: .62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  letter-spacing: .05em;
 }
 
+/* ── Streamlit overrides ── */
 .stButton > button {
-  background: #1A1612 !important;
-  color: #F7F5F2 !important;
+  background: #1C1917 !important;
+  color: #F5F3EF !important;
   border: none !important;
-  border-radius: 3px !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-weight: 500 !important;
-  font-size: 0.84rem !important;
-  padding: 0.52rem 1.5rem !important;
-  letter-spacing: 0.01em !important;
-  transition: background 0.15s !important;
-  box-shadow: none !important;
+  border-radius: 5px !important;
+  font-family: 'Be Vietnam Pro', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: .88rem !important;
+  padding: .52rem 1.4rem !important;
+  transition: background .15s !important;
 }
 .stButton > button:hover:not(:disabled) {
-  background: #3A332C !important;
+  background: #44403C !important;
 }
 .stButton > button:disabled {
-  background: #C8C0B6 !important;
-  color: #F7F5F2 !important;
+  background: #D6D3CE !important;
+  color: #A8A29E !important;
 }
 
-.stRadio label { font-size: 0.82rem !important; color: #3A332C !important; }
-[data-testid="stFileUploader"] {
-  border: 1px dashed #C8C0B6 !important;
-  border-radius: 4px !important;
+/* Container borders lighter */
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+  border-color: #E5E1D8 !important;
+  border-radius: 6px !important;
   background: #FFFFFF !important;
 }
-div[data-testid="stImage"] img { border-radius: 3px; }
-.stAlert { border-radius: 3px !important; font-size: 0.81rem !important; }
-hr { border: none !important; border-top: 1px solid #E4E0DA !important; }
-[data-testid="column"] { padding: 0 0.35rem !important; }
+
+div[data-testid="stImage"] img { border-radius: 5px; }
+.stAlert { border-radius: 5px !important; font-size: .83rem !important; }
+hr { border: none !important; border-top: 1px solid #E5E1D8 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -420,12 +346,12 @@ cnn_model   = load_cnn()
 yolo_model  = load_yolo()
 
 demo = (cnn_model is None) or (yolo_model is None)
-demo_tag = '<span class="demo-tag">Demo</span>' if demo else ""
+badge = '<span class="badge">DEMO</span>' if demo else ""
 
 st.markdown(f"""
-<div class="hdr">
-  <span class="hdr-title">Canteen Auto-Billing{demo_tag}</span>
-  <span class="hdr-sub">Ảnh khay &rarr; CNN nhận diện 5 ô &rarr; YOLO đếm trứng &rarr; Hóa đơn tức thì</span>
+<div class="title-bar">
+  <h1>🍱 Canteen Auto-Billing {badge}</h1>
+  <p>Camera captures tray → CNN identifies 5 dishes → YOLO counts eggs → instant bill</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -433,27 +359,27 @@ egg_price = EGG_SURCHARGE
 
 col_in, _ = st.columns([1, 2])
 with col_in:
-    mode = st.radio("Nguồn ảnh", ["Tải ảnh lên", "Chụp webcam"], horizontal=True)
+    mode = st.radio("Input source", ["Upload image", "Webcam snapshot"], horizontal=True)
     tray_image = None
-    if mode == "Tải ảnh lên":
-        up = st.file_uploader("Chọn ảnh khay cơm", type=["jpg","jpeg","png"])
+    if mode == "Upload image":
+        up = st.file_uploader("Choose tray photo", type=["jpg","jpeg","png"])
         if up:
             tray_image = Image.open(up).convert("RGB")
     else:
-        cam = st.camera_input("Hướng camera vào khay")
+        cam = st.camera_input("Point camera at the tray")
         if cam:
             tray_image = Image.open(cam).convert("RGB")
 
-    go = st.button("Nhận diện món & tính tiền", disabled=(tray_image is None))
+    go = st.button("🔍 Identify dishes & calculate bill", disabled=(tray_image is None))
 
 if tray_image and not go:
-    st.image(tray_image, caption="Ảnh khay — sẵn sàng phân tích", width=500)
+    st.image(tray_image, caption="Tray photo — ready to analyse", width=500)
 
 if go and tray_image:
     img_np = np.array(tray_image)
 
     cnn_results = {}
-    with st.spinner("Đang phân loại từng ô bằng CNN…"):
+    with st.spinner("Classifying compartments with CNN…"):
         for slot, region in COMPARTMENTS.items():
             crop = crop_compartment(img_np, region)
             dish, conf = predict_dish(cnn_model, crop, CLASS_NAMES)
@@ -461,41 +387,39 @@ if go and tray_image:
             price = PRICE_MAP.get(dish_key, 0)
             display = DISPLAY_NAMES.get(dish_key, dish)
             cnn_results[slot] = dict(crop=crop, dish=dish, display=display, conf=conf, price=price)
-
+        
     has_thit_kho_trung = any(
         normalize_text(r["dish"]) == "thịt kho trứng" for r in cnn_results.values()
     )
 
     egg_count, annotated_np = 0, img_np.copy()
     if has_thit_kho_trung:
-        with st.spinner("Đang đếm trứng bằng YOLO…"):
+        with st.spinner("Counting eggs with YOLO…"):
             egg_count, annotated_np = count_eggs_yolo(yolo_model, img_np)
 
     base_eggs   = 1 if has_thit_kho_trung else 0
     extra_eggs  = max(0, egg_count - base_eggs)
     egg_charge  = extra_eggs * egg_price
 
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("---")
     left_col, right_col = st.columns([3, 2])
 
     with left_col:
-        st.markdown('<div class="sec-label">Các ô trong khay</div>', unsafe_allow_html=True)
+        st.markdown("### Tray compartments")
 
         def render_card(col, slot, r):
             with col:
-                pct = int(r["conf"] * 100)
-                price_str = fmt_vnd(r["price"]) if r["price"] else "—"
-                price_cls = "ccard-price" if r["price"] else "ccard-price zero"
-                st.markdown('<div class="ccard">', unsafe_allow_html=True)
-                st.image(Image.fromarray(r["crop"]), use_container_width=True)
-                st.markdown(f"""
-                  <div class="ccard-slot">{slot}</div>
-                  <div class="ccard-name">{r["display"]}</div>
-                  <div class="conf-rail"><div class="conf-bar-fill" style="width:{pct}%"></div></div>
-                  <div class="conf-pct">{pct}%</div>
-                  <span class="{price_cls}">{price_str}</span>
-                </div>
-                """, unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown(f'<div class="crop-label">{slot}</div>', unsafe_allow_html=True)
+                    st.image(Image.fromarray(r["crop"]), use_container_width=True)
+                    pct = int(r["conf"]*100)
+                    price_str = fmt_vnd(r["price"]) if r["price"] else "—"
+                    st.markdown(f"""
+                    <div class="dish-name">{r["display"]}</div>
+                    <div class="conf-bar"><div class="conf-fill" style="width:{pct}%"></div></div>
+                    <div style="font-size:.68rem;color:#A8A29E;margin-bottom:.25rem">{pct}% confidence</div>
+                    <div class="price-tag">{price_str}</div>
+                    """, unsafe_allow_html=True)
 
         r1 = st.columns(2)
         for col, slot in zip(r1, ["Top-Left", "Top-Right"]):
@@ -504,71 +428,56 @@ if go and tray_image:
         r2 = st.columns(3)
         for col, slot in zip(r2, ["Bottom-Left", "Bottom-Center", "Bottom-Right"]):
             render_card(col, slot, cnn_results[slot])
-
+     
         if has_thit_kho_trung:
-            st.markdown('<div class="sec-label">Kết quả nhận diện trứng</div>', unsafe_allow_html=True)
-            st.image(annotated_np, caption=f"YOLO phát hiện {egg_count} quả trứng", use_container_width=True)
+            st.markdown("### 🥚 Egg detection")
+            st.image(annotated_np, caption=f"YOLO detected {egg_count} egg(s)", use_container_width=True)
 
     with right_col:
         if has_thit_kho_trung:
-            if extra_eggs > 0:
-                surcharge_note = f"+{extra_eggs} quả thêm × {fmt_vnd(egg_price)}"
-                extra_html = f'<div class="egg-extra-cost">+{fmt_vnd(egg_charge)} phụ thu</div>'
-            else:
-                surcharge_note = "1 trứng đã gồm trong Thịt kho trứng"
-                extra_html = ""
-
+            surcharge_note = (
+                f"+{extra_eggs} extra × {fmt_vnd(egg_price)}" if extra_eggs > 0
+                else "1 egg included in Thịt kho trứng"
+            )
             st.markdown(f"""
-            <div class="sec-label">Trứng</div>
-            <div class="egg-box">
-              <div class="egg-num">{egg_count}</div>
-              <div class="egg-unit">quả trứng được phát hiện</div>
-              <div class="egg-note">{surcharge_note}</div>
-              {extra_html}
+            <div class="egg-panel">
+              <div class="egg-count">🥚 {egg_count}</div>
+              <div class="egg-label">eggs detected by YOLO</div>
+              <div style="margin-top:.5rem;font-size:.78rem;color:#92400E">{surcharge_note}</div>
+              {'<div style="color:#B45309;font-weight:700;margin-top:.3rem;font-family:Space Mono,monospace;font-size:.85rem">+'
+               + fmt_vnd(egg_charge) + ' surcharge</div>' if egg_charge > 0 else ""}
             </div>
             """, unsafe_allow_html=True)
 
-        total = sum(r["price"] for r in cnn_results.values()) + egg_charge
-
+        st.markdown("### 🧾 Bill")
+        total = 0
         rows_html = ""
         for slot, r in cnn_results.items():
             price_str = fmt_vnd(r["price"]) if r["price"] > 0 else "&#8212;"
-            rows_html += f"""
-            <div class="b-row">
-              <span>{r["display"]}<span class="b-slot">{slot}</span></span>
-              <span class="b-amount">{price_str}</span>
-            </div>"""
+            rows_html += f"""<div class="bill-row">
+              <span>{r["display"]} <span style="color:#A8A29E;font-size:.73rem">({slot})</span></span>
+              <span class="mono">{price_str}</span></div>"""
+            total += r["price"]
 
         egg_row_html = ""
         if egg_charge > 0:
-            egg_row_html = f"""
-            <div class="b-egg-row">
-              <span>Trứng thêm &times;{extra_eggs}</span>
-              <span class="b-egg-amount">+{fmt_vnd(egg_charge)}</span>
-            </div>"""
+            egg_row_html = f"""<div class="bill-egg">
+              <span>🥚 Extra eggs ×{extra_eggs}</span>
+              <span class="mono">+{fmt_vnd(egg_charge)}</span></div>"""
+            total += egg_charge
 
         st.markdown(f"""
-        <div class="sec-label">Hóa đơn</div>
-        <div class="bill">
-          <div class="bill-top">
-            <div class="bill-top-label">Chi tiết thanh toán</div>
-          </div>
-          <div>
-            {rows_html}
-            {egg_row_html}
-          </div>
-          <div class="b-total-row">
-            <span class="b-total-label">Tổng cộng</span>
-            <span class="b-total-amount">{fmt_vnd(total)}</span>
+        <div class="bill-panel">
+          {rows_html}
+          {egg_row_html}
+          <div class="bill-total">
+            <span>TOTAL</span>
+            <span class="mono-total">{fmt_vnd(total)}</span>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.success(f"Tổng tiền: **{fmt_vnd(total)}**")
+        st.success(f"✅ **{fmt_vnd(total)}**")
 
 elif not tray_image:
-    st.markdown("""
-    <div class="empty-state">
-      Tải ảnh khay cơm lên hoặc dùng webcam để bắt đầu.
-    </div>
-    """, unsafe_allow_html=True)
+    st.info("⬆️ Upload a tray photo or use the webcam to get started.")
