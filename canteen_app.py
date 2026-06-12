@@ -137,7 +137,7 @@ st.set_page_config(page_title="Canteen Auto-Billing", page_icon="🍱", layout="
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -152,32 +152,36 @@ html, body, [class*="css"] {
   background-image: radial-gradient(circle, #C8C4BA 1px, transparent 1px);
   background-size: 28px 28px;
 }
-[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stHeader"] { display: none !important; } /* Hide default streamlit header */
 [data-testid="stMain"] { background: transparent !important; }
+
+/* Increased padding to avoid content hiding behind the fixed navbar */
 .block-container {
-  padding-top: 2rem !important;
+  padding-top: 6.5rem !important;
   max-width: 1200px !important;
 }
 
-/* ── Sticky navbar ── */
+/* ── Sticky navbar (Fixed at top) ── */
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 999;
-  background: rgba(245, 242, 236, 0.88);
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  background: rgba(245, 242, 236, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #DDD9D0;
-  margin: -2rem -2rem 2rem -2rem;
-  padding: 0 2rem;
+  border-bottom: 2px solid #DDD9D0;
+  padding: 0 3rem;
   display: flex;
   align-items: center;
-  height: 56px;
-  gap: 12px;
+  height: 72px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 .navbar-wordmark {
   font-family: 'Instrument Serif', serif;
-  font-size: 20px;
+  font-size: 32px; /* To hơn, nổi bật hơn */
+  font-weight: 600;
   color: #1A1916;
   letter-spacing: -0.2px;
   line-height: 1;
@@ -187,36 +191,36 @@ html, body, [class*="css"] {
   color: #C84B18;
 }
 .navbar-sep {
-  width: 1px; height: 18px;
+  width: 1px; height: 24px;
   background: #DDD9D0;
-  margin: 0 4px;
+  margin: 0 12px;
 }
 .navbar-sub {
-  font-size: 12px;
-  color: #9A9690;
-  font-weight: 400;
+  font-size: 15px; /* To hơn */
+  color: #7A7670;
+  font-weight: 500;
 }
 .navbar-demo {
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #9A9690;
   border: 1px solid #DDD9D0;
   border-radius: 4px;
-  padding: 3px 9px;
+  padding: 4px 10px;
   background: #EDEAE3;
 }
 
 /* ── Upload section ── */
 .field-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px; /* To hơn */
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9A9690;
-  margin-bottom: 10px;
+  color: #7A7670;
+  margin-bottom: 12px;
 }
 
 /* ── Divider with label ── */
@@ -224,15 +228,15 @@ html, body, [class*="css"] {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 28px 0 20px;
+  margin: 32px 0 24px;
 }
 .divider-line { flex: 1; height: 1px; background: #DDD9D0; }
 .divider-text {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px; /* To hơn */
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #B8B4AC;
+  color: #9A9690;
 }
 
 /* ── Dish card ── */
@@ -242,29 +246,29 @@ html, body, [class*="css"] {
   border-radius: 12px;
   overflow: hidden;
 }
-.d-body { padding: 10px 12px 13px; }
+.d-body { padding: 12px 14px 15px; }
 .d-slot {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px; /* To hơn */
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #C0BDB5;
-  margin-bottom: 5px;
+  color: #B0ADA5;
+  margin-bottom: 6px;
 }
 .d-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 16px; /* To hơn */
+  font-weight: 700;
   color: #1A1916;
   line-height: 1.3;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-.d-bar { background: #EAE7E0; height: 2px; border-radius: 1px; margin-bottom: 4px; }
-.d-fill { height: 2px; border-radius: 1px; }
-.d-pct { font-size: 11px; color: #C0BDB5; margin-bottom: 7px; }
+.d-bar { background: #EAE7E0; height: 3px; border-radius: 2px; margin-bottom: 6px; }
+.d-fill { height: 3px; border-radius: 2px; }
+.d-pct { font-size: 12px; color: #9A9690; margin-bottom: 8px; font-weight: 500;}
 .d-price {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 15px; /* To hơn */
+  font-weight: 600;
   color: #1F7A42;
 }
 
@@ -272,34 +276,34 @@ html, body, [class*="css"] {
 .egg-row {
   background: #FDFCF8;
   border: 1px solid #E4E0D8;
-  border-left: 3px solid #C84B18;
+  border-left: 4px solid #C84B18;
   border-radius: 0 10px 10px 0;
-  padding: 14px 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 .egg-n {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 36px;
-  font-weight: 500;
+  font-size: 40px; /* To hơn */
+  font-weight: 600;
   color: #C84B18;
   line-height: 1;
   flex-shrink: 0;
 }
-.egg-lbl { font-size: 13px; font-weight: 600; color: #1A1916; margin-bottom: 2px; }
-.egg-note { font-size: 12px; color: #9A9690; }
+.egg-lbl { font-size: 15px; font-weight: 700; color: #1A1916; margin-bottom: 4px; }
+.egg-note { font-size: 13px; color: #7A7670; font-weight: 500;}
 .egg-pill {
   margin-left: auto;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: #A03010;
   background: #FDF0E8;
   border: 1px solid #F0C8A8;
   border-radius: 6px;
-  padding: 5px 11px;
+  padding: 6px 12px;
   flex-shrink: 0;
 }
 
@@ -309,35 +313,39 @@ html, body, [class*="css"] {
   border: 1px solid #E4E0D8;
   border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 .bill-header {
-  padding: 13px 18px 12px;
-  border-bottom: 1px solid #EAE7E0;
+  padding: 16px 20px 14px;
+  border-bottom: 2px solid #EAE7E0;
 }
 .bill-header-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 16px; /* To hơn */
+  font-weight: 700;
   color: #1A1916;
 }
 .bill-header-sub {
-  font-size: 11px;
-  color: #B8B4AC;
-  margin-top: 1px;
+  font-size: 12px;
+  color: #9A9690;
+  margin-top: 2px;
+  font-weight: 500;
 }
 .b-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 9px 18px;
+  padding: 12px 20px;
   border-bottom: 1px solid #F2EFE8;
-  font-size: 13px;
+  font-size: 15px; /* To hơn */
   color: #3A3832;
+  font-weight: 500;
 }
-.b-slot { font-size: 11px; color: #C0BDB5; margin-left: 5px; }
+.b-slot { font-size: 12px; color: #B0ADA5; margin-left: 6px; font-weight: 600;}
 .b-amt {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: #6A6760;
+  font-size: 14px; /* To hơn */
+  font-weight: 600;
+  color: #4A4740;
   flex-shrink: 0;
   margin-left: 8px;
 }
@@ -345,31 +353,31 @@ html, body, [class*="css"] {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 9px 18px;
+  padding: 12px 20px;
   border-bottom: 1px solid #F0C8A8;
   background: #FDF0E8;
-  font-size: 13px;
+  font-size: 15px;
   color: #A03010;
-  font-weight: 500;
+  font-weight: 600;
 }
 .bill-total {
-  padding: 16px 18px;
+  padding: 20px;
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   background: #1A1916;
 }
 .bill-total-lbl {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 14px; /* To hơn */
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #5A5752;
+  color: #9A9690;
 }
 .bill-total-amt {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 26px; /* To hơn, nổi bật nhất */
+  font-weight: 600;
   color: #6ECC8A;
 }
 
@@ -381,9 +389,9 @@ html, body, [class*="css"] {
   border: none !important;
   border-radius: 10px !important;
   font-family: 'Instrument Sans', sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  padding: 11px 20px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  padding: 12px 20px !important;
   letter-spacing: 0.02em !important;
   transition: background .15s !important;
 }
@@ -398,9 +406,9 @@ html, body, [class*="css"] {
   background: #FDFCF8 !important;
 }
 div[data-testid="stImage"] img { border-radius: 8px; }
-.stAlert { border-radius: 10px !important; font-size: 13px !important; }
+.stAlert { border-radius: 10px !important; font-size: 14px !important; font-weight: 500 !important; }
 hr { border: none !important; border-top: 1px solid #DDD9D0 !important; }
-.stRadio label { font-size: 13px !important; font-weight: 400 !important; }
+.stRadio label { font-size: 14px !important; font-weight: 500 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -445,8 +453,8 @@ elif not tray_image:
         st.markdown("""
         <div style="margin-top:8px;padding:24px 20px;background:#FDFCF8;border:1px dashed #DDD9D0;
           border-radius:12px;text-align:center;">
-          <div style="font-size:13px;font-weight:500;color:#3A3832;margin-bottom:4px;">Tải ảnh khay cơm lên</div>
-          <div style="font-size:12px;color:#9A9690;">JPG, JPEG, PNG — hoặc chụp webcam</div>
+          <div style="font-size:14px;font-weight:600;color:#3A3832;margin-bottom:6px;">Tải ảnh khay cơm lên</div>
+          <div style="font-size:13px;color:#9A9690;">JPG, JPEG, PNG — hoặc chụp webcam</div>
         </div>""", unsafe_allow_html=True)
 
 # ── Results ──
@@ -493,7 +501,7 @@ if go and tray_image:
             with col:
                 st.image(Image.fromarray(r["crop"]), use_container_width=True)
                 st.markdown(f"""
-                <div style="padding:4px 0 12px">
+                <div style="padding:6px 0 14px">
                   <div class="d-slot">{slot}</div>
                   <div class="d-name">{r["display"]}</div>
                   <div class="d-bar"><div class="d-fill" style="width:{pct}%;background:{bc}"></div></div>
