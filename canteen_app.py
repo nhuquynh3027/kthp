@@ -472,13 +472,18 @@ if go and tray_image:
                 conf=conf, price=PRICE_MAP.get(dk, 0)
             )
 
-    has_egg_dish = any(normalize_text(r["dish"]) == "thịt kho trứng" for r in cnn_results.values())
+    # Chỉ kích hoạt YOLO đếm trứng khi khay có món "thịt kho trứng"
+    DISHES_WITH_EGG = {"thịt kho trứng"}
+    has_egg_dish = any(normalize_text(r["dish"]) in DISHES_WITH_EGG for r in cnn_results.values())
+
     egg_count, annotated_np = 0, img_np.copy()
     if has_egg_dish:
         with st.spinner("Đang đếm trứng…"):
             egg_count, annotated_np = count_eggs_yolo(yolo_model, img_np)
 
-    extra_eggs = max(0, egg_count - (1 if has_egg_dish else 0))
+    # Mỗi món "thịt kho trứng" đã bao gồm 1 trứng trong giá → trứng thêm = tổng - số món có trứng
+    egg_dishes_count = sum(1 for r in cnn_results.values() if normalize_text(r["dish"]) in DISHES_WITH_EGG)
+    extra_eggs = max(0, egg_count - egg_dishes_count) if has_egg_dish else 0
     egg_charge = extra_eggs * EGG_SURCHARGE
 
     # Section divider
